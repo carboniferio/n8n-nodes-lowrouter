@@ -77,9 +77,9 @@ npm test        # builds, then runs the unit tests in test/
 
 Releases are published to npm from GitHub Actions with a provenance statement, which n8n requires for verified community nodes. The workflow is `.github/workflows/publish.yml`.
 
-This setup happens once, after the GitHub repository exists. npm accepts a trusted publisher only for a package that already exists, so the first release uses a token:
+This setup happens once per npm package name, so it applies again to `@lowrouter/n8n-nodes-lowrouter` even if it was done for the old unscoped name. npm accepts a trusted publisher only for a package that already exists, so the first release uses a token:
 
-1. Create a granular npm access token with publish rights and save it as the `NPM_TOKEN` secret in the GitHub repository.
+1. Create a granular npm access token with publish rights on the `lowrouter` organization and save it as the `NPM_TOKEN` secret in the GitHub repository.
 2. Release the first version (see below).
 3. On npmjs.com, open the package's **Settings > Trusted Publishers** and add GitHub Actions with repository `carboniferio/n8n-nodes-lowrouter` and workflow `publish.yml`.
 4. Delete the `NPM_TOKEN` secret. Later releases authenticate through GitHub's OIDC token.
