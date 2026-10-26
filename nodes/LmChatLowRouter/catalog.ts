@@ -42,10 +42,9 @@ function isAgentReady(model: LowRouterModel): boolean {
 function formatRange(range: Range | undefined): string | undefined {
 	// The API may send null for an unknown bound.
 	if (typeof range?.min !== 'number' || typeof range.max !== 'number') return undefined;
-	const round = (n: number) => Number(n.toPrecision(3));
-	return range.min === range.max
-		? `${round(range.min)}`
-		: `${round(range.min)}-${round(range.max)}`;
+	const min = Number(range.min.toPrecision(3));
+	const max = Number(range.max.toPrecision(3));
+	return min === max ? `${min}` : `${min}-${max}`;
 }
 
 export function describeModel(model: LowRouterModel): string | undefined {

@@ -201,8 +201,10 @@ export class LmChatLowRouter implements INodeType {
 		},
 		loadOptions: {
 			async getRegions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				const modelId = this.getCurrentNodeParameter('model', { extractValue: true });
-				if (typeof modelId !== 'string' || !modelId) return toRegionOptions([], []);
+				const value = this.getCurrentNodeParameter('model', { extractValue: true });
+				const modelId = typeof value === 'string' ? value.trim() : '';
+				// Only unscoped auto IDs take a region: skip the catalogue fetch for the rest.
+				if (!isUnscopedAuto(modelId)) return toRegionOptions([], []);
 				const [models, jurisdictions] = await Promise.all([
 					getList<LowRouterModel>(this, '/models'),
 					getList<Jurisdiction>(this, '/jurisdictions'),
@@ -213,10 +215,10 @@ export class LmChatLowRouter implements INodeType {
 	};
 
 	async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
-		const baseModel = (
-			this.getNodeParameter('model', itemIndex, '', { extractValue: true }) as string
+		const baseModel = String(
+			this.getNodeParameter('model', itemIndex, '', { extractValue: true }) ?? '',
 		).trim();
-		const region = (this.getNodeParameter('region', itemIndex, '') as string).trim();
+		const region = String(this.getNodeParameter('region', itemIndex, '') ?? '').trim();
 		const options = this.getNodeParameter('options', itemIndex, {}) as ModelOptions;
 		if (region && !isUnscopedAuto(baseModel)) {
 			throw new NodeOperationError(
