@@ -45,10 +45,7 @@ test('default list keeps active unscoped auto chat models with tool calling', ()
 test('show all lists every ID, sorted', () => {
 	const ids = toListItems(catalog, { showAll: true }).map((item) => item.value);
 	assert.equal(ids.length, catalog.length);
-	assert.deepEqual(
-		ids,
-		[...ids].sort((a, b) => a.localeCompare(b)),
-	);
+	assert.deepEqual(ids, [...ids].sort((a, b) => a.localeCompare(b)));
 });
 
 test('search filter is case-insensitive and trimmed', () => {
@@ -129,6 +126,7 @@ test('subtitle puts the region first and drops the auto/ prefix', () => {
 		subtitle('mistral/mistralai/mistral-large-2512/fr-par', ''),
 		'mistral/mistralai/mistral-large-2512/fr-par',
 	);
+	assert.equal(subtitle(' Auto/mistralai/mistral-small-2603 ', ''), 'mistralai/mistral-small-2603');
 });
 
 test('404 is recognised from NodeApiError and raw HTTP errors', () => {

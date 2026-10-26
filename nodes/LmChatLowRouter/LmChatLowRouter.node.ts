@@ -120,7 +120,7 @@ export class LmChatLowRouter implements INodeType {
 		// $parameter already unwraps the resource locator to its ID. Region first and no auto/
 		// prefix, so the region survives n8n's subtitle truncation.
 		subtitle:
-			'={{($parameter.region ? $parameter.region + " · " : "") + ($parameter.model.toLowerCase().startsWith("auto/") ? $parameter.model.slice(5) : $parameter.model)}}',
+			'={{($parameter.region ? $parameter.region + " · " : "") + String($parameter.model ?? "").trim().replace(/^auto[/]/i, "")}}',
 		description: 'Chat models routed by LowRouter, with region and sovereignty controls',
 		defaults: {
 			name: 'LowRouter Chat Model',
