@@ -1,4 +1,4 @@
-# n8n-nodes-lowrouter
+# @lowrouter/n8n-nodes-lowrouter
 
 An n8n community node that adds **LowRouter Chat Model**, a chat model sub-node for the AI Agent and other n8n AI nodes.
 
@@ -15,7 +15,9 @@ An n8n community node that adds **LowRouter Chat Model**, a chat model sub-node 
 
 ## Installation
 
-Follow the [community nodes installation guide](https://docs.n8n.io/integrations/community-nodes/installation/). On a self-hosted instance, an owner or admin can go to **Settings > Community nodes**, choose **Install**, and enter `n8n-nodes-lowrouter`.
+Follow the [community nodes installation guide](https://docs.n8n.io/integrations/community-nodes/installation/). On a self-hosted instance, an owner or admin can go to **Settings > Community nodes**, choose **Install**, and enter `@lowrouter/n8n-nodes-lowrouter`.
+
+Version 0.1.0 was published as `n8n-nodes-lowrouter`. That name is deprecated; see the [changelog](CHANGELOG.md) for moving a workflow to the new package.
 
 ## Credentials
 
@@ -75,16 +77,16 @@ npm test        # builds, then runs the unit tests in test/
 
 Releases are published to npm from GitHub Actions with a provenance statement, which n8n requires for verified community nodes. The workflow is `.github/workflows/publish.yml`.
 
-This setup happens once, after the GitHub repository exists. npm accepts a trusted publisher only for a package that already exists, so the first release uses a token:
+This setup happens once per npm package name, so `@lowrouter/n8n-nodes-lowrouter` needs it even if the old unscoped name already had it. npm accepts a trusted publisher only for a package that already exists, so the first release uses a token:
 
-1. Create a granular npm access token with publish rights and save it as the `NPM_TOKEN` secret in the GitHub repository.
+1. Create a granular npm access token with **Read and write** access under **Packages and scopes**, and select the `@lowrouter` scope. The package does not exist yet, so you cannot pick it by name, and the token's **Organizations** permission does not grant publish rights. If your npm account or the `lowrouter` organization requires two-factor authentication for publishing, also tick **Bypass two-factor authentication**, or the CI publish fails with `EOTP`. Save the token as the `NPM_TOKEN` secret in the GitHub repository.
 2. Release the first version (see below).
 3. On npmjs.com, open the package's **Settings > Trusted Publishers** and add GitHub Actions with repository `carboniferio/n8n-nodes-lowrouter` and workflow `publish.yml`.
 4. Delete the `NPM_TOKEN` secret. Later releases authenticate through GitHub's OIDC token.
 
 After that, run `npm run release` locally. It lints, builds, bumps the version, updates `CHANGELOG.md`, and pushes a tag. The tag push triggers the workflow, which publishes with `--provenance`.
 
-Before submitting to the n8n Creator Portal, check the published version with `npx @n8n/scan-community-package n8n-nodes-lowrouter`.
+Before submitting to the n8n Creator Portal, check the published version with `npx @n8n/scan-community-package @lowrouter/n8n-nodes-lowrouter`.
 
 ## Resources
 

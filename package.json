@@ -1,5 +1,5 @@
 {
-	"name": "n8n-nodes-lowrouter",
+	"name": "@lowrouter/n8n-nodes-lowrouter",
 	"version": "0.1.1",
 	"description": "LowRouter chat model for n8n: carbon-aware LLM routing with EU and sovereignty scopes",
 	"license": "MIT",
