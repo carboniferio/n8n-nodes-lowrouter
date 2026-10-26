@@ -8,7 +8,7 @@ const {
 	scopesFor,
 	toListItems,
 	toRegionOptions,
-	withRegion,
+	isUnscopedAuto,
 } = require('../dist/nodes/LmChatLowRouter/catalog.js');
 
 const chat = (id, extra = {}) => ({
@@ -67,11 +67,10 @@ test('region options start with Any and use jurisdiction descriptions', () => {
 	assert.match(options[2].description, /'us'/);
 });
 
-test('region is appended only to unscoped auto IDs', () => {
-	assert.equal(withRegion('auto/a/b', 'eu'), 'auto/a/b/eu');
-	assert.equal(withRegion('auto/a/b', ''), 'auto/a/b');
-	assert.equal(withRegion('auto/a/b/us', 'eu'), 'auto/a/b/us');
-	assert.equal(withRegion('mistral/a/b/fr-par', 'eu'), 'mistral/a/b/fr-par');
+test('only unscoped auto IDs take a region', () => {
+	assert.equal(isUnscopedAuto('auto/a/b'), true);
+	assert.equal(isUnscopedAuto('auto/a/b/us'), false);
+	assert.equal(isUnscopedAuto('mistral/a/b/fr-par'), false);
 });
 
 test('Responses API only when the model lacks Chat Completions', () => {

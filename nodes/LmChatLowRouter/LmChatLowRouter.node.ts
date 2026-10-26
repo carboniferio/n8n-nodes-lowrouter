@@ -1,5 +1,4 @@
 import type {
-	IHttpRequestOptions,
 	ILoadOptionsFunctions,
 	INodeListSearchResult,
 	INodePropertyOptions,
@@ -8,52 +7,44 @@ import type {
 	ISupplyDataFunctions,
 	SupplyData,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import { supplyModel } from '@n8n/ai-node-sdk';
 
 import type { Jurisdiction, LowRouterModel } from './catalog';
 import {
 	BASE_URL,
+	isUnscopedAuto,
 	prefersResponsesApi,
 	scopesFor,
 	toListItems,
 	toRegionOptions,
-	withRegion,
 } from './catalog';
-
-type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
 
 type ModelOptions = {
 	temperature?: number;
 	maxTokens?: number;
-	reasoningEffort?: ReasoningEffort;
+	reasoningEffort?: string;
 };
 
-async function getList<T>(ctx: ILoadOptionsFunctions, path: string): Promise<T[]> {
-	const response = (await ctx.helpers.httpRequestWithAuthentication.call(ctx, 'lowRouterApi', {
+async function apiGet<T>(ctx: ILoadOptionsFunctions | ISupplyDataFunctions, path: string) {
+	return (await ctx.helpers.httpRequestWithAuthentication.call(ctx, 'lowRouterApi', {
 		method: 'GET',
 		url: `${BASE_URL}${path}`,
 		json: true,
-	})) as { data?: T[] };
-	return response.data ?? [];
+	})) as T;
+}
+
+async function getList<T>(ctx: ILoadOptionsFunctions, path: string): Promise<T[]> {
+	return (await apiGet<{ data?: T[] }>(ctx, path)).data ?? [];
 }
 
 async function getEndpoints(
 	ctx: ISupplyDataFunctions,
 	modelId: string,
 ): Promise<string[] | undefined> {
-	const request: IHttpRequestOptions = {
-		method: 'GET',
-		url: `${BASE_URL}/models/${modelId.split('/').map(encodeURIComponent).join('/')}`,
-		json: true,
-	};
+	const path = `/models/${modelId.split('/').map(encodeURIComponent).join('/')}`;
 	try {
-		const model = (await ctx.helpers.httpRequestWithAuthentication.call(
-			ctx,
-			'lowRouterApi',
-			request,
-		)) as LowRouterModel;
-		return model.endpoints;
+		return (await apiGet<LowRouterModel>(ctx, path)).endpoints;
 	} catch {
 		// The chat request itself reports an unknown model; default to Chat Completions here.
 		return undefined;
@@ -212,23 +203,32 @@ export class LmChatLowRouter implements INodeType {
 	};
 
 	async supplyData(this: ISupplyDataFunctions, itemIndex: number): Promise<SupplyData> {
-		const credentials = await this.getCredentials('lowRouterApi');
 		const baseModel = this.getNodeParameter('model', itemIndex, '', {
 			extractValue: true,
 		}) as string;
 		const region = this.getNodeParameter('region', itemIndex, '') as string;
 		const options = this.getNodeParameter('options', itemIndex, {}) as ModelOptions;
-		const model = withRegion(baseModel, region);
+		if (region && !isUnscopedAuto(baseModel)) {
+			throw new NodeOperationError(
+				this.getNode(),
+				`Region '${region}' only applies to auto/<creator>/<model> IDs, not '${baseModel}'`,
+				{ description: 'Pick an unscoped auto-routed model, or set Region to Any.' },
+			);
+		}
+		const model = region ? `${baseModel}/${region}` : baseModel;
 
-		const useResponsesApi = prefersResponsesApi(await getEndpoints(this, model));
-		let additionalParams: Record<string, unknown> | undefined;
-		if (options.reasoningEffort) {
-			// ChatOpenAI only forwards `reasoning` for model names it recognises as
-			// OpenAI reasoning models, which LowRouter IDs never are.
-			additionalParams = useResponsesApi
+		const [credentials, endpoints] = await Promise.all([
+			this.getCredentials('lowRouterApi'),
+			getEndpoints(this, model),
+		]);
+		const useResponsesApi = prefersResponsesApi(endpoints);
+		// ChatOpenAI only forwards `reasoning` for model names it recognises as
+		// OpenAI reasoning models, which LowRouter IDs never are.
+		const additionalParams = !options.reasoningEffort
+			? undefined
+			: useResponsesApi
 				? { reasoning: { effort: options.reasoningEffort } }
 				: { reasoning_effort: options.reasoningEffort };
-		}
 
 		return supplyModel(this, {
 			type: 'openai',

@@ -6,6 +6,8 @@ import type {
 	Icon,
 } from 'n8n-workflow';
 
+import { BASE_URL } from '../nodes/LmChatLowRouter/catalog';
+
 export class LowRouterApi implements ICredentialType {
 	name = 'lowRouterApi';
 
@@ -40,7 +42,7 @@ export class LowRouterApi implements ICredentialType {
 
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: 'https://api.lowrouter.ai/v1',
+			baseURL: BASE_URL,
 			url: '/models',
 		},
 	};

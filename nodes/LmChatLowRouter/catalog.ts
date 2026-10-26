@@ -30,7 +30,7 @@ export function isUnscopedAuto(id: string): boolean {
 	return UNSCOPED_AUTO_ID.test(id);
 }
 
-export function isAgentReady(model: LowRouterModel): boolean {
+function isAgentReady(model: LowRouterModel): boolean {
 	return (
 		isUnscopedAuto(model.id) &&
 		model.lifecycle === 'active' &&
@@ -81,8 +81,9 @@ export function scopesFor(models: LowRouterModel[], modelId: string): string[] {
 	if (!isUnscopedAuto(modelId)) return [];
 	const prefix = `${modelId}/`;
 	return models
-		.filter((model) => model.id.startsWith(prefix) && !model.id.slice(prefix.length).includes('/'))
+		.filter((model) => model.id.startsWith(prefix))
 		.map((model) => model.id.slice(prefix.length))
+		.filter((scope) => !scope.includes('/'))
 		.sort();
 }
 
@@ -103,10 +104,6 @@ export function toRegionOptions(
 			description: described.get(scope) ?? `Only routes in the '${scope}' scope`,
 		})),
 	];
-}
-
-export function withRegion(modelId: string, region: string): string {
-	return region && isUnscopedAuto(modelId) ? `${modelId}/${region}` : modelId;
 }
 
 /**
