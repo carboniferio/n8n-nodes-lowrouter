@@ -45,8 +45,15 @@ async function getEndpoints(
 	const path = `/models/${modelId.split('/').map(encodeURIComponent).join('/')}`;
 	try {
 		return (await apiGet<LowRouterModel>(ctx, path)).endpoints;
-	} catch {
-		// The chat request itself reports an unknown model; default to Chat Completions here.
+	} catch (error) {
+		// NodeApiError carries the HTTP status as a string.
+		if ((error as { httpCode?: unknown }).httpCode === '404') {
+			throw new NodeOperationError(ctx.getNode(), `LowRouter has no model '${modelId}'`, {
+				description:
+					'Check the model ID. With a Region set, the model may have no routes in that scope: pick another region or set it to Any.',
+			});
+		}
+		// Other failures surface on the chat request itself; default to Chat Completions.
 		return undefined;
 	}
 }
