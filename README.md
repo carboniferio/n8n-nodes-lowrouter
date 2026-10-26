@@ -1,46 +1,98 @@
 # n8n-nodes-lowrouter
 
-This is an n8n community node. It lets you use _app/service name_ in your n8n workflows.
+An n8n community node that adds **LowRouter Chat Model**, a chat model sub-node for the AI Agent and other n8n AI nodes.
 
-_App/service name_ is _one or two sentences describing the service this node integrates with_.
+[LowRouter](https://lowrouter.ai) is an OpenAI-compatible LLM gateway. It routes each request to a provider and region, taking carbon intensity, price and jurisdiction into account, and fails over when a route is down. Model IDs of the form `auto/<creator>/<model>` let LowRouter pick the route. Adding a scope such as `/eu` or `/eu-sovereign` keeps the request inside that jurisdiction.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/sustainable-use-license/) workflow automation platform.
 
-[Installation](#installation)
-[Operations](#operations)
-[Credentials](#credentials)
-[Compatibility](#compatibility)
-[Usage](#usage)
-[Resources](#resources)
-[Version history](#version-history)
+- [Installation](#installation)
+- [Credentials](#credentials)
+- [Usage](#usage)
+- [Compatibility](#compatibility)
+- [Development](#development)
+- [Resources](#resources)
 
 ## Installation
 
-Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
-
-## Operations
-
-_List the operations supported by your node._
+Follow the [community nodes installation guide](https://docs.n8n.io/integrations/community-nodes/installation/). On a self-hosted instance, an owner or admin can go to **Settings > Community nodes**, choose **Install**, and enter `n8n-nodes-lowrouter`.
 
 ## Credentials
 
-_If users need to authenticate with the app/service, provide details here. You should include prerequisites (such as signing up with the service), available authentication methods, and how to set them up._
+You need a LowRouter account and an API key.
 
-## Compatibility
+1. Sign in at [lowrouter.ai](https://lowrouter.ai) and open the [Keys page](https://lowrouter.ai/app/keys).
+2. Create a key. It starts with `sk-lr-` and is shown once.
+3. In n8n, create a **LowRouter API** credential and paste the key.
 
-_State the minimum n8n version, as well as which versions you test against. You can also include any known version incompatibility issues._
+n8n tests the credential by calling `GET https://api.lowrouter.ai/v1/models` with the key. A wrong or expired key fails the test with `Unauthorized`.
+
+Your key's routing policy, set in the LowRouter dashboard, applies to every request made with it. See [API keys](https://lowrouter.ai/docs/getting-started/api-keys).
 
 ## Usage
 
-_This is an optional section. Use it to help users with any difficult or confusing aspects of the node._
+1. Add an **AI Agent** node (or another node with a Chat Model input).
+2. Click the **Chat Model** input and choose **LowRouter Chat Model**.
+3. Select your LowRouter credential and a model.
 
-_By the time users are looking for community nodes, they probably already know n8n basics. But if you expect new users, you can link to the [Try it out](https://docs.n8n.io/try-it-out/) documentation to help them get started._
+### Parameters
+
+| Parameter                              | What it does                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Show All Models**                    | Off by default. The model list then shows active `auto/<creator>/<model>` chat models that support tool calling, which is what an agent needs. Turn it on to list every ID LowRouter serves, including pinned routes like `mistral/mistralai/mistral-large-2512/fr-par`, scoped IDs, and models without tool calling.                                                                                                                |
+| **Model**                              | Pick from the list (searchable, with price, carbon and context window per model), or switch to **ID** and type any LowRouter model ID.                                                                                                                                                                                                                                                                                               |
+| **Region**                             | Restricts an auto-routed model to a jurisdiction by adding a scope to the model ID: `auto/mistralai/mistral-large-2512` with region `eu` is sent as `auto/mistralai/mistral-large-2512/eu`. The list shows the scopes LowRouter offers for the selected model, read from `/v1/models` and described by `/v1/jurisdictions`. Leave it on **Any** to let your routing policy decide. It has no effect on pinned or already-scoped IDs. |
+| **Options > Maximum Number of Tokens** | Caps the length of the reply.                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Options > Reasoning Effort**         | Sent as `reasoning_effort`. LowRouter translates it for each provider and uses the nearest level a model accepts. See [request parameters](https://lowrouter.ai/docs/guides/request-parameters).                                                                                                                                                                                                                                     |
+| **Options > Sampling Temperature**     | Sampling temperature, 0 to 2.                                                                                                                                                                                                                                                                                                                                                                                                        |
+
+The node uses the OpenAI Chat Completions API. It switches to the Responses API only for a model whose `endpoints` field in `/v1/models` lists `responses` but not `chat.completions`. LowRouter translates Responses requests onto Chat Completions, so Chat Completions is the direct path whenever a model offers it.
+
+Streaming works when the AI Agent's **Enable Streaming** option is on and the workflow starts with a Chat Trigger or a Webhook whose response mode is **Streaming**.
+
+### What the node does not show
+
+n8n has no place for a sub-node to report per-call cost. Usage, cost and credits are on the LowRouter dashboard.
+
+n8n's Agents and Chat Hub features only list providers built into n8n. To use LowRouter there, create an **OpenAI** credential with Base URL `https://api.lowrouter.ai/v1` and your LowRouter key.
+
+## Compatibility
+
+Requires an n8n version that supports AI node SDK packages (`aiNodeSdkVersion` 1). Tested on n8n 2.44.7.
+
+The package has no runtime dependencies. `n8n-workflow` and `@n8n/ai-node-sdk` are peer dependencies provided by n8n.
+
+## Development
+
+```bash
+npm install
+npm run dev     # starts n8n with this node loaded, rebuilding on change
+npm run lint    # n8n community node lint rules
+npm test        # builds, then runs the unit tests in test/
+```
+
+### Releasing
+
+Releases are published to npm from GitHub Actions with a provenance statement, which n8n requires for verified community nodes. The workflow is `.github/workflows/publish.yml`.
+
+One-time setup, after the GitHub repository exists. npm only accepts a trusted publisher for a package that already exists, so the first release uses a token:
+
+1. Create a granular npm access token with publish rights and save it as the `NPM_TOKEN` secret in the GitHub repository.
+2. Release the first version (see below).
+3. On npmjs.com, open the package's **Settings > Trusted Publishers** and add GitHub Actions with repository `carboniferio/n8n-nodes-lowrouter` and workflow `publish.yml`.
+4. Delete the `NPM_TOKEN` secret. Later releases authenticate through GitHub's OIDC token.
+
+After that, run `npm run release` locally. It lints, builds, bumps the version, updates `CHANGELOG.md`, and pushes a tag. The tag push triggers the workflow, which publishes with `--provenance`.
+
+Before submitting to the n8n Creator Portal, check the published version with `npx @n8n/scan-community-package n8n-nodes-lowrouter`.
 
 ## Resources
 
-* [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
-* _Link to app/service documentation._
+- [LowRouter documentation](https://lowrouter.ai/docs)
+- [Available models and scopes](https://lowrouter.ai/docs/models/available)
+- [Routing and jurisdiction scopes](https://lowrouter.ai/docs/models/routing)
+- [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
 
-## Version history
+## License
 
-_This is another optional section. If your node has multiple versions, include a short description of available versions and what changed, as well as any compatibility impact._
+[MIT](LICENSE.md)

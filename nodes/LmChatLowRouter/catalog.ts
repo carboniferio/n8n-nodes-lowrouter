@@ -95,7 +95,7 @@ export function toRegionOptions(
 		{
 			name: 'Any',
 			value: '',
-			description: 'Let LowRouter pick the route, preferring EU-sovereign ones',
+			description: "Let LowRouter pick the route under your key's routing policy",
 		},
 		...scopes.map((scope) => ({
 			name: scope,
