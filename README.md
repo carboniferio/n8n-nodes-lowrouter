@@ -1,4 +1,4 @@
-# n8n-nodes-lowrouter
+# @lowrouter/n8n-nodes-lowrouter
 
 An n8n community node that adds **LowRouter Chat Model**, a chat model sub-node for the AI Agent and other n8n AI nodes.
 
@@ -15,7 +15,9 @@ An n8n community node that adds **LowRouter Chat Model**, a chat model sub-node 
 
 ## Installation
 
-Follow the [community nodes installation guide](https://docs.n8n.io/integrations/community-nodes/installation/). On a self-hosted instance, an owner or admin can go to **Settings > Community nodes**, choose **Install**, and enter `n8n-nodes-lowrouter`.
+Follow the [community nodes installation guide](https://docs.n8n.io/integrations/community-nodes/installation/). On a self-hosted instance, an owner or admin can go to **Settings > Community nodes**, choose **Install**, and enter `@lowrouter/n8n-nodes-lowrouter`.
+
+Version 0.1.0 was published as `n8n-nodes-lowrouter`. That name is deprecated; see the [changelog](CHANGELOG.md) for moving a workflow to the new package.
 
 ## Credentials
 
@@ -84,7 +86,7 @@ This setup happens once, after the GitHub repository exists. npm accepts a trust
 
 After that, run `npm run release` locally. It lints, builds, bumps the version, updates `CHANGELOG.md`, and pushes a tag. The tag push triggers the workflow, which publishes with `--provenance`.
 
-Before submitting to the n8n Creator Portal, check the published version with `npx @n8n/scan-community-package n8n-nodes-lowrouter`.
+Before submitting to the n8n Creator Portal, check the published version with `npx @n8n/scan-community-package @lowrouter/n8n-nodes-lowrouter`.
 
 ## Resources
 
