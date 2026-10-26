@@ -25,7 +25,7 @@ You need a LowRouter account and an API key.
 2. Create a key. It starts with `sk-lr-` and is shown once.
 3. In n8n, create a **LowRouter API** credential and paste the key.
 
-n8n tests the credential by calling `GET https://api.lowrouter.ai/v1/models` with the key. A wrong or expired key fails the test with `Unauthorized`.
+n8n tests the credential by calling `GET https://api.lowrouter.ai/v1/key`, which returns the key's label and remaining credit. A blank, malformed, wrong or expired key fails the test.
 
 Your key's routing policy, set in the LowRouter dashboard, applies to every request made with it. See [API keys](https://lowrouter.ai/docs/getting-started/api-keys).
 

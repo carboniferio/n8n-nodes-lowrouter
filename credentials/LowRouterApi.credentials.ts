@@ -43,7 +43,8 @@ export class LowRouterApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL: BASE_URL,
-			url: '/models',
+			// /models is public and answers a blank key too; /key needs a valid one.
+			url: '/key',
 		},
 	};
 }
