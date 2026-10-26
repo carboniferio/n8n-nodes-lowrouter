@@ -84,14 +84,15 @@ async function getEndpoints(
 		return (await apiGet<LowRouterModel>(ctx, modelPath(modelId))).endpoints;
 	} catch (error) {
 		// Other failures surface on the chat request itself; default to Chat Completions.
-		if (!isNotFound(error)) return undefined;
+		// An unscoped 404 is not conclusive either: /models/{id} does not resolve every ID
+		// the chat endpoint accepts, such as version-less pinned shorthands
+		// (mistral/mistralai/mistral-large), so let the chat request decide.
+		if (!isNotFound(error) || !region) return undefined;
 		// A scoped ID is missing either because the model is wrong or because it has no route in the region.
-		const baseExists =
-			!!region &&
-			(await apiGet(ctx, modelPath(baseModel)).then(
-				() => true,
-				(baseError) => !isNotFound(baseError),
-			));
+		const baseExists = await apiGet(ctx, modelPath(baseModel)).then(
+			() => true,
+			(baseError) => !isNotFound(baseError),
+		);
 		throw new NodeOperationError(ctx.getNode(), `LowRouter has no model '${modelId}'`, {
 			description: baseExists
 				? 'The model has no routes in this region: pick another region or set it to Any.'
@@ -246,7 +247,8 @@ export class LmChatLowRouter implements INodeType {
 				if (!isUnscopedAuto(modelId)) return toRegionOptions([], []);
 				const [models, jurisdictions] = await Promise.all([
 					getModels(this),
-					getList<Jurisdiction>(this, '/jurisdictions'),
+					// Descriptions only: a failed lookup must not take the scopes down with it.
+					getList<Jurisdiction>(this, '/jurisdictions').catch((): Jurisdiction[] => []),
 				]);
 				return toRegionOptions(scopesFor(models, modelId), jurisdictions);
 			},

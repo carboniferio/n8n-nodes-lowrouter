@@ -52,6 +52,7 @@ test('search filter is case-insensitive and trimmed', () => {
 test('scopes come from the scoped IDs LowRouter lists for the model', () => {
 	assert.deepEqual(scopesFor(catalog, 'auto/mistralai/mistral-large-2512'), ['eu', 'eu-sovereign']);
 	assert.deepEqual(scopesFor(catalog, 'auto/openai/gpt-oss-120b'), ['us']);
+	assert.deepEqual(scopesFor(catalog, 'Auto/OpenAI/gpt-oss-120b'), ['us']);
 	assert.deepEqual(scopesFor(catalog, 'mistral/mistralai/mistral-large-2512/fr-par'), []);
 });
 
@@ -70,6 +71,7 @@ test('region options start with Any and use jurisdiction descriptions', () => {
 
 test('only unscoped auto IDs take a region', () => {
 	assert.equal(isUnscopedAuto('auto/a/b'), true);
+	assert.equal(isUnscopedAuto('Auto/a/b'), true);
 	assert.equal(isUnscopedAuto('auto/a/b/us'), false);
 	assert.equal(isUnscopedAuto('mistral/a/b/fr-par'), false);
 });

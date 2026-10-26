@@ -23,8 +23,8 @@ export type LowRouterModel = {
 
 export type Jurisdiction = { id: string; description?: string; auto_scope?: string };
 
-// auto/<creator>/<model>, with no scope suffix.
-const UNSCOPED_AUTO_ID = /^auto\/[^/]+\/[^/]+$/;
+// auto/<creator>/<model>, with no scope suffix. LowRouter IDs are case-insensitive.
+const UNSCOPED_AUTO_ID = /^auto\/[^/]+\/[^/]+$/i;
 
 export function isUnscopedAuto(id: string): boolean {
 	return UNSCOPED_AUTO_ID.test(id);
@@ -79,9 +79,11 @@ export function toListItems(
  */
 export function scopesFor(models: LowRouterModel[], modelId: string): string[] {
 	if (!isUnscopedAuto(modelId)) return [];
-	const prefix = `${modelId}/`;
+	const prefix = `${modelId}/`.toLowerCase();
 	return models
-		.filter((model) => model.id.startsWith(prefix) && model.lifecycle !== 'deprecated')
+		.filter(
+			(model) => model.id.toLowerCase().startsWith(prefix) && model.lifecycle !== 'deprecated',
+		)
 		.map((model) => model.id.slice(prefix.length))
 		.filter((scope) => !scope.includes('/'))
 		.sort();
