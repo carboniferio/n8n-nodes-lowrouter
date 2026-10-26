@@ -86,7 +86,7 @@ export function scopesFor(models: LowRouterModel[], modelId: string): string[] {
 		)
 		.map((model) => model.id.slice(prefix.length))
 		.filter((scope) => !scope.includes('/'))
-		.sort();
+		.sort((a, b) => a.localeCompare(b));
 }
 
 export function toRegionOptions(
