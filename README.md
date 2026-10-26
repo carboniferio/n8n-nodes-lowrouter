@@ -79,7 +79,7 @@ Releases are published to npm from GitHub Actions with a provenance statement, w
 
 This setup happens once per npm package name, so it applies again to `@lowrouter/n8n-nodes-lowrouter` even if it was done for the old unscoped name. npm accepts a trusted publisher only for a package that already exists, so the first release uses a token:
 
-1. Create a granular npm access token with publish rights on the `lowrouter` organization and save it as the `NPM_TOKEN` secret in the GitHub repository.
+1. Create a granular npm access token with **Read and write** access under **Packages and scopes**, selecting the `@lowrouter` scope (the package does not exist yet, so it cannot be picked by name), and save it as the `NPM_TOKEN` secret in the GitHub repository. The token's **Organizations** permission does not grant publish rights.
 2. Release the first version (see below).
 3. On npmjs.com, open the package's **Settings > Trusted Publishers** and add GitHub Actions with repository `carboniferio/n8n-nodes-lowrouter` and workflow `publish.yml`.
 4. Delete the `NPM_TOKEN` secret. Later releases authenticate through GitHub's OIDC token.

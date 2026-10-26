@@ -30,7 +30,8 @@
 #
 # Option B — npm Automation Token (fallback):
 #   1. On npmjs.com: Access Tokens → Generate New Token → Granular Access Token.
-#      Scope it to this package with "Read and write" publish permission.
+#      Give it "Read and write" on the @lowrouter scope under "Packages and
+#      scopes" (a package that is not yet published cannot be selected by name).
 #   2. In GitHub: Settings → Secrets and variables → Actions → New secret.
 #      Name it NPM_TOKEN and paste the token value.
 #
