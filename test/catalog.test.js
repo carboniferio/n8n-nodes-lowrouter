@@ -10,6 +10,7 @@ const {
 	toRegionOptions,
 	isUnscopedAuto,
 	isNotFound,
+	unscopedBase,
 } = require('../dist/nodes/LmChatLowRouter/catalog.js');
 
 const chat = (id, extra = {}) => ({
@@ -42,7 +43,7 @@ test('default list keeps active unscoped auto chat models with tool calling', ()
 test('show all lists every ID, sorted', () => {
 	const ids = toListItems(catalog, { showAll: true }).map((item) => item.value);
 	assert.equal(ids.length, catalog.length);
-	assert.deepEqual(ids, [...ids].sort());
+	assert.deepEqual(ids, [...ids].sort((a, b) => a.localeCompare(b)));
 });
 
 test('search filter is case-insensitive and trimmed', () => {
@@ -75,6 +76,14 @@ test('only unscoped auto IDs take a region', () => {
 	assert.equal(isUnscopedAuto('Auto/a/b'), true);
 	assert.equal(isUnscopedAuto('auto/a/b/us'), false);
 	assert.equal(isUnscopedAuto('mistral/a/b/fr-par'), false);
+});
+
+test('the unscoped base is found only for scoped auto IDs', () => {
+	assert.equal(unscopedBase('auto/a/b/fr'), 'auto/a/b');
+	assert.equal(unscopedBase('Auto/A/b/EU'), 'Auto/A/b');
+	assert.equal(unscopedBase('auto/a/b'), undefined);
+	assert.equal(unscopedBase('auto/a/b/eu/x'), undefined);
+	assert.equal(unscopedBase('mistral/a/b/fr-par'), undefined);
 });
 
 test('Responses API only when the model lacks Chat Completions', () => {

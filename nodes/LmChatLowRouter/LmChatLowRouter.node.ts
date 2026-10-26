@@ -19,6 +19,7 @@ import {
 	scopesFor,
 	toListItems,
 	toRegionOptions,
+	unscopedBase,
 } from './catalog';
 
 type ModelOptions = {
@@ -57,13 +58,11 @@ let catalogueCache:
 	| undefined;
 
 async function getModels(ctx: ILoadOptionsFunctions): Promise<LowRouterModel[]> {
-	const credentialId = ctx.getNode().credentials?.lowRouterApi?.id ?? '';
+	const credentialId = ctx.getNode().credentials?.lowRouterApi?.id;
+	// Without an ID there is nothing to key on: fetch without evicting another credential's entry.
+	if (!credentialId) return await getList<LowRouterModel>(ctx, '/models');
 	const now = Date.now();
-	if (
-		!credentialId ||
-		catalogueCache?.credentialId !== credentialId ||
-		now - catalogueCache.at > CATALOGUE_TTL_MS
-	) {
+	if (catalogueCache?.credentialId !== credentialId || now - catalogueCache.at > CATALOGUE_TTL_MS) {
 		const models = getList<LowRouterModel>(ctx, '/models');
 		catalogueCache = { credentialId, at: now, models };
 		// Do not keep a failed fetch around.
@@ -84,7 +83,6 @@ const LOOKUP_TIMEOUT_MS = 10_000;
 async function getEndpoints(
 	ctx: ISupplyDataFunctions,
 	modelId: string,
-	baseModel: string,
 ): Promise<string[] | undefined> {
 	try {
 		return (await apiGet<LowRouterModel>(ctx, modelPath(modelId), LOOKUP_TIMEOUT_MS)).endpoints;
@@ -93,7 +91,9 @@ async function getEndpoints(
 		// An unscoped 404 is not conclusive either: /models/{id} does not resolve every ID
 		// the chat endpoint accepts, such as version-less pinned shorthands
 		// (mistral/mistralai/mistral-large), so let the chat request decide.
-		if (!isNotFound(error) || modelId === baseModel) return undefined;
+		// A scoped auto ID is checked the same way whether the scope came from Region or was typed.
+		const baseModel = unscopedBase(modelId);
+		if (!isNotFound(error) || !baseModel) return undefined;
 		// A scoped ID is missing either because the model is wrong or because it has no route in the region.
 		const base = await apiGet(ctx, modelPath(baseModel), LOOKUP_TIMEOUT_MS).then(
 			() => 'found' as const,
@@ -101,7 +101,8 @@ async function getEndpoints(
 		);
 		throw new NodeOperationError(ctx.getNode(), `LowRouter has no model '${modelId}'`, {
 			description: {
-				found: 'The model has no routes in this region: pick another region or set it to Any.',
+				found:
+					'The model has no routes in this scope: pick another region or set it to Any, or drop the scope from the model ID.',
 				missing: 'Check the model ID.',
 				unknown: 'Check the model ID, or pick another region or set it to Any.',
 			}[base],
@@ -290,7 +291,7 @@ export class LmChatLowRouter implements INodeType {
 
 		const [credentials, endpoints] = await Promise.all([
 			this.getCredentials('lowRouterApi'),
-			getEndpoints(this, model, baseModel),
+			getEndpoints(this, model),
 		]);
 		const useResponsesApi = prefersResponsesApi(endpoints);
 		// ChatOpenAI only forwards `reasoning` for model names it recognises as

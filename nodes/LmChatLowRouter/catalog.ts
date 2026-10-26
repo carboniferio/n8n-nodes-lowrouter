@@ -30,6 +30,14 @@ export function isUnscopedAuto(id: string): boolean {
 	return UNSCOPED_AUTO_ID.test(id);
 }
 
+// auto/<creator>/<model>/<scope>: captures the unscoped part.
+const SCOPED_AUTO_ID = /^(auto\/[^/]+\/[^/]+)\/[^/]+$/i;
+
+/** The unscoped auto ID behind a scoped one, or undefined when the ID has no scope. */
+export function unscopedBase(id: string): string | undefined {
+	return SCOPED_AUTO_ID.exec(id)?.[1];
+}
+
 function isAgentReady(model: LowRouterModel): boolean {
 	return (
 		isUnscopedAuto(model.id) &&
