@@ -26,6 +26,7 @@ const catalog = [
 	chat('auto/mistralai/mistral-large-2512/eu-sovereign'),
 	chat('auto/openai/gpt-oss-120b'),
 	chat('auto/openai/gpt-oss-120b/us'),
+	chat('auto/openai/gpt-oss-120b/eu', { lifecycle: 'deprecated' }),
 	chat('auto/old/model', { lifecycle: 'deprecated' }),
 	chat('auto/lighton/ocr', { capabilities: { streaming: true } }),
 	chat('auto/baai/bge-m3', { modality: 'embedding', endpoints: ['embeddings'] }),
@@ -43,8 +44,8 @@ test('show all lists every ID, sorted', () => {
 	assert.deepEqual(ids, [...ids].sort());
 });
 
-test('search filter is case-insensitive', () => {
-	const ids = toListItems(catalog, { showAll: false, filter: 'MISTRAL' }).map((i) => i.value);
+test('search filter is case-insensitive and trimmed', () => {
+	const ids = toListItems(catalog, { showAll: false, filter: ' MISTRAL ' }).map((i) => i.value);
 	assert.deepEqual(ids, ['auto/mistralai/mistral-large-2512']);
 });
 

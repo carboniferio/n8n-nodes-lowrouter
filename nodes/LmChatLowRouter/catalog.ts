@@ -65,7 +65,7 @@ export function toListItems(
 	models: LowRouterModel[],
 	{ showAll, filter }: { showAll: boolean; filter?: string },
 ): INodeListSearchItems[] {
-	const needle = filter?.toLowerCase();
+	const needle = filter?.trim().toLowerCase();
 	return models
 		.filter((model) => showAll || isAgentReady(model))
 		.filter((model) => !needle || model.id.toLowerCase().includes(needle))
@@ -75,13 +75,13 @@ export function toListItems(
 
 /**
  * The scopes LowRouter lists for this model: the 4th segment of every
- * `<model>/<scope>` ID in the catalogue.
+ * `<model>/<scope>` ID in the catalogue that is not deprecated.
  */
 export function scopesFor(models: LowRouterModel[], modelId: string): string[] {
 	if (!isUnscopedAuto(modelId)) return [];
 	const prefix = `${modelId}/`;
 	return models
-		.filter((model) => model.id.startsWith(prefix))
+		.filter((model) => model.id.startsWith(prefix) && model.lifecycle !== 'deprecated')
 		.map((model) => model.id.slice(prefix.length))
 		.filter((scope) => !scope.includes('/'))
 		.sort();

@@ -38,26 +38,65 @@ async function getList<T>(ctx: ILoadOptionsFunctions, path: string): Promise<T[]
 	return (await apiGet<{ data?: T[] }>(ctx, path)).data ?? [];
 }
 
+// The catalogue is large (over 1 MB) and every search keystroke or region
+// dropdown would refetch it: keep the last response for a short while.
+const CATALOGUE_TTL_MS = 60_000;
+// Keyed by credential ID, so the cache never holds the API key itself.
+let catalogueCache:
+	| { credentialId: string; at: number; models: Promise<LowRouterModel[]> }
+	| undefined;
+
+async function getModels(ctx: ILoadOptionsFunctions): Promise<LowRouterModel[]> {
+	const credentialId = ctx.getNode().credentials?.lowRouterApi?.id ?? '';
+	const now = Date.now();
+	if (
+		!credentialId ||
+		catalogueCache?.credentialId !== credentialId ||
+		now - catalogueCache.at > CATALOGUE_TTL_MS
+	) {
+		const models = getList<LowRouterModel>(ctx, '/models');
+		catalogueCache = { credentialId, at: now, models };
+		// Do not keep a failed fetch around.
+		models.catch(() => {
+			if (catalogueCache?.models === models) catalogueCache = undefined;
+		});
+	}
+	return await catalogueCache.models;
+}
+
+function modelPath(modelId: string): string {
+	return `/models/${modelId.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+function isNotFound(error: unknown): boolean {
+	// NodeApiError carries the HTTP status as a string; a raw Axios error as a number.
+	const { httpCode, response } = error as { httpCode?: unknown; response?: { status?: unknown } };
+	return String(httpCode ?? response?.status) === '404';
+}
+
 async function getEndpoints(
 	ctx: ISupplyDataFunctions,
-	modelId: string,
-	scoped: boolean,
+	baseModel: string,
+	region: string,
 ): Promise<string[] | undefined> {
-	const path = `/models/${modelId.split('/').map(encodeURIComponent).join('/')}`;
+	const modelId = region ? `${baseModel}/${region}` : baseModel;
 	try {
-		return (await apiGet<LowRouterModel>(ctx, path)).endpoints;
+		return (await apiGet<LowRouterModel>(ctx, modelPath(modelId))).endpoints;
 	} catch (error) {
-		// NodeApiError carries the HTTP status as a string; a raw Axios error as a number.
-		const { httpCode, response } = error as { httpCode?: unknown; response?: { status?: unknown } };
-		if (String(httpCode ?? response?.status) === '404') {
-			throw new NodeOperationError(ctx.getNode(), `LowRouter has no model '${modelId}'`, {
-				description: scoped
-					? 'The model may have no routes in this region: pick another region or set it to Any.'
-					: 'Check the model ID.',
-			});
-		}
 		// Other failures surface on the chat request itself; default to Chat Completions.
-		return undefined;
+		if (!isNotFound(error)) return undefined;
+		// A scoped ID is missing either because the model is wrong or because it has no route in the region.
+		const baseExists =
+			!!region &&
+			(await apiGet(ctx, modelPath(baseModel)).then(
+				() => true,
+				(baseError) => !isNotFound(baseError),
+			));
+		throw new NodeOperationError(ctx.getNode(), `LowRouter has no model '${modelId}'`, {
+			description: baseExists
+				? 'The model has no routes in this region: pick another region or set it to Any.'
+				: 'Check the model ID.',
+		});
 	}
 }
 
@@ -68,7 +107,7 @@ export class LmChatLowRouter implements INodeType {
 		icon: { light: 'file:../../icons/lowrouter.svg', dark: 'file:../../icons/lowrouter.dark.svg' },
 		group: ['transform'],
 		version: [1],
-		subtitle: '={{$parameter.model.value}}',
+		subtitle: '={{$parameter.model.value + ($parameter.region ? "/" + $parameter.region : "")}}',
 		description: 'Chat models routed by LowRouter, with region and sovereignty controls',
 		defaults: {
 			name: 'LowRouter Chat Model',
@@ -194,7 +233,7 @@ export class LmChatLowRouter implements INodeType {
 				this: ILoadOptionsFunctions,
 				filter?: string,
 			): Promise<INodeListSearchResult> {
-				const models = await getList<LowRouterModel>(this, '/models');
+				const models = await getModels(this);
 				const showAll = this.getCurrentNodeParameter('showAllModels') === true;
 				return { results: toListItems(models, { showAll, filter }) };
 			},
@@ -206,7 +245,7 @@ export class LmChatLowRouter implements INodeType {
 				// Only unscoped auto IDs take a region: skip the catalogue fetch for the rest.
 				if (!isUnscopedAuto(modelId)) return toRegionOptions([], []);
 				const [models, jurisdictions] = await Promise.all([
-					getList<LowRouterModel>(this, '/models'),
+					getModels(this),
 					getList<Jurisdiction>(this, '/jurisdictions'),
 				]);
 				return toRegionOptions(scopesFor(models, modelId), jurisdictions);
@@ -241,7 +280,7 @@ export class LmChatLowRouter implements INodeType {
 
 		const [credentials, endpoints] = await Promise.all([
 			this.getCredentials('lowRouterApi'),
-			getEndpoints(this, model, !!region),
+			getEndpoints(this, baseModel, region),
 		]);
 		const useResponsesApi = prefersResponsesApi(endpoints);
 		// ChatOpenAI only forwards `reasoning` for model names it recognises as
