@@ -99,4 +99,12 @@ test('description shows price, carbon and context', () => {
 		'EUR 0.1-0.2 in / 0.4 out per 1M tokens · 0.0001 gCO2e per token · 128,000 context',
 	);
 	assert.equal(describeModel(chat('auto/a/b')), undefined);
+	assert.equal(
+		describeModel(
+			chat('auto/a/b', {
+				auto_routing: { carbon_range: { carbon_per_token_gco2e: { min: null, max: null } } },
+			}),
+		),
+		undefined,
+	);
 });
