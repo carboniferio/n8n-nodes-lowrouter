@@ -59,5 +59,8 @@
 	},
 	"bugs": {
 		"url": "https://github.com/carboniferio/n8n-nodes-lowrouter/issues"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }
