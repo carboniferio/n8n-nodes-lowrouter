@@ -220,6 +220,16 @@ export class LmChatLowRouter implements INodeType {
 		).trim();
 		const region = String(this.getNodeParameter('region', itemIndex, '') ?? '').trim();
 		const options = this.getNodeParameter('options', itemIndex, {}) as ModelOptions;
+		if (!baseModel) {
+			throw new NodeOperationError(this.getNode(), 'No model selected', {
+				description: 'Pick a model from the list or enter a LowRouter model ID.',
+			});
+		}
+		if (region.includes('/')) {
+			throw new NodeOperationError(this.getNode(), `Region '${region}' is not a single scope`, {
+				description: "A region is one scope segment, such as 'eu'.",
+			});
+		}
 		if (region && !isUnscopedAuto(baseModel)) {
 			throw new NodeOperationError(
 				this.getNode(),
