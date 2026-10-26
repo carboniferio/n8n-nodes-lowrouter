@@ -117,7 +117,10 @@ export class LmChatLowRouter implements INodeType {
 		icon: { light: 'file:../../icons/lowrouter.svg', dark: 'file:../../icons/lowrouter.dark.svg' },
 		group: ['transform'],
 		version: [1],
-		subtitle: '={{$parameter.model.value + ($parameter.region ? "/" + $parameter.region : "")}}',
+		// $parameter already unwraps the resource locator to its ID. Region first and no auto/
+		// prefix, so the region survives n8n's subtitle truncation.
+		subtitle:
+			'={{($parameter.region ? $parameter.region + " · " : "") + ($parameter.model.toLowerCase().startsWith("auto/") ? $parameter.model.slice(5) : $parameter.model)}}',
 		description: 'Chat models routed by LowRouter, with region and sovereignty controls',
 		defaults: {
 			name: 'LowRouter Chat Model',

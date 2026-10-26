@@ -2,23 +2,12 @@ import type { INodeListSearchItems, INodePropertyOptions } from 'n8n-workflow';
 
 export const BASE_URL = 'https://api.lowrouter.ai/v1';
 
-type Range = { min?: number; max?: number };
-
 export type LowRouterModel = {
 	id: string;
 	lifecycle?: string;
 	modality?: string;
 	endpoints?: string[];
 	capabilities?: { function_calling?: boolean };
-	context_length?: number;
-	auto_routing?: {
-		pricing_range?: {
-			currency?: string;
-			prompt_per_1m_tokens?: Range;
-			completion_per_1m_tokens?: Range;
-		};
-		carbon_range?: { carbon_per_token_gco2e?: Range };
-	};
 };
 
 export type Jurisdiction = { id: string; description?: string; auto_scope?: string };
@@ -47,28 +36,6 @@ function isAgentReady(model: LowRouterModel): boolean {
 	);
 }
 
-function formatRange(range: Range | undefined): string | undefined {
-	// The API may send null for an unknown bound.
-	if (typeof range?.min !== 'number' || typeof range.max !== 'number') return undefined;
-	const min = Number(range.min.toPrecision(3));
-	const max = Number(range.max.toPrecision(3));
-	return min === max ? `${min}` : `${min}-${max}`;
-}
-
-export function describeModel(model: LowRouterModel): string | undefined {
-	const parts: string[] = [];
-	const pricing = model.auto_routing?.pricing_range;
-	const input = formatRange(pricing?.prompt_per_1m_tokens);
-	const output = formatRange(pricing?.completion_per_1m_tokens);
-	if (input && output) {
-		parts.push(`${pricing?.currency ?? ''} ${input} in / ${output} out per 1M tokens`.trim());
-	}
-	const carbon = formatRange(model.auto_routing?.carbon_range?.carbon_per_token_gco2e);
-	if (carbon) parts.push(`${carbon} gCO2e per token`);
-	if (model.context_length) parts.push(`${model.context_length.toLocaleString('en-US')} context`);
-	return parts.length ? parts.join(' · ') : undefined;
-}
-
 export function toListItems(
 	models: LowRouterModel[],
 	{ showAll, filter }: { showAll: boolean; filter?: string },
@@ -78,7 +45,7 @@ export function toListItems(
 		.filter((model) => showAll || isAgentReady(model))
 		.filter((model) => !needle || model.id.toLowerCase().includes(needle))
 		.sort((a, b) => a.id.localeCompare(b.id))
-		.map((model) => ({ name: model.id, value: model.id, description: describeModel(model) }));
+		.map((model) => ({ name: model.id, value: model.id }));
 }
 
 /**

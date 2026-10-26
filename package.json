@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-lowrouter",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "LowRouter chat model for n8n: carbon-aware LLM routing with EU and sovereignty scopes",
 	"license": "MIT",
 	"homepage": "https://github.com/carboniferio/n8n-nodes-lowrouter#readme",

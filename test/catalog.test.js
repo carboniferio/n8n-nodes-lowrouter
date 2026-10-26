@@ -2,8 +2,10 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
+const { Workflow } = require('n8n-workflow');
+
+const { LmChatLowRouter } = require('../dist/nodes/LmChatLowRouter/LmChatLowRouter.node.js');
 const {
-	describeModel,
 	prefersResponsesApi,
 	scopesFor,
 	toListItems,
@@ -43,7 +45,10 @@ test('default list keeps active unscoped auto chat models with tool calling', ()
 test('show all lists every ID, sorted', () => {
 	const ids = toListItems(catalog, { showAll: true }).map((item) => item.value);
 	assert.equal(ids.length, catalog.length);
-	assert.deepEqual(ids, [...ids].sort((a, b) => a.localeCompare(b)));
+	assert.deepEqual(
+		ids,
+		[...ids].sort((a, b) => a.localeCompare(b)),
+	);
 });
 
 test('search filter is case-insensitive and trimmed', () => {
@@ -93,32 +98,36 @@ test('Responses API only when the model lacks Chat Completions', () => {
 	assert.equal(prefersResponsesApi(undefined), false);
 });
 
-test('description shows price, carbon and context', () => {
-	const description = describeModel(
-		chat('auto/a/b', {
-			context_length: 128000,
-			auto_routing: {
-				pricing_range: {
-					currency: 'EUR',
-					prompt_per_1m_tokens: { min: 0.1, max: 0.2 },
-					completion_per_1m_tokens: { min: 0.4, max: 0.4 },
-				},
-				carbon_range: { carbon_per_token_gco2e: { min: 0.0001, max: 0.0001 } },
-			},
-		}),
+// Evaluated by n8n itself, which unwraps the resource-locator value before the expression sees it.
+function subtitle(model, region) {
+	const type = new LmChatLowRouter();
+	const node = {
+		id: '1',
+		name: 'LowRouter Chat Model',
+		type: 'lmChatLowRouter',
+		typeVersion: 1,
+		position: [0, 0],
+		parameters: { model: { __rl: true, mode: 'list', value: model }, region },
+	};
+	const nodeTypes = { getByName: () => type, getByNameAndVersion: () => type };
+	const workflow = new Workflow({ nodes: [node], connections: {}, active: false, nodeTypes });
+	return workflow.expression.getSimpleParameterValue(
+		node,
+		type.description.subtitle,
+		'internal',
+		{},
 	);
+}
+
+test('subtitle puts the region first and drops the auto/ prefix', () => {
 	assert.equal(
-		description,
-		'EUR 0.1-0.2 in / 0.4 out per 1M tokens · 0.0001 gCO2e per token · 128,000 context',
+		subtitle('auto/mistralai/mistral-small-2603', 'eu'),
+		'eu · mistralai/mistral-small-2603',
 	);
-	assert.equal(describeModel(chat('auto/a/b')), undefined);
+	assert.equal(subtitle('auto/mistralai/mistral-small-2603', ''), 'mistralai/mistral-small-2603');
 	assert.equal(
-		describeModel(
-			chat('auto/a/b', {
-				auto_routing: { carbon_range: { carbon_per_token_gco2e: { min: null, max: null } } },
-			}),
-		),
-		undefined,
+		subtitle('mistral/mistralai/mistral-large-2512/fr-par', ''),
+		'mistral/mistralai/mistral-large-2512/fr-par',
 	);
 });
 
