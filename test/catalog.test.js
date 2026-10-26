@@ -144,3 +144,10 @@ test('404 is recognised from NodeApiError and raw HTTP errors', () => {
 	assert.equal(isNotFound({ httpCode: '503' }), false);
 	assert.equal(isNotFound(new Error('timeout')), false);
 });
+
+// n8n names the node type <package name>.<node name>; the codex must match it.
+test('codex node matches the package and node names', () => {
+	const pkg = require('../package.json');
+	const codex = require('../dist/nodes/LmChatLowRouter/LmChatLowRouter.node.json');
+	assert.equal(codex.node, `${pkg.name}.${new LmChatLowRouter().description.name}`);
+});
