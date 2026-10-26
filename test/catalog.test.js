@@ -9,6 +9,7 @@ const {
 	toListItems,
 	toRegionOptions,
 	isUnscopedAuto,
+	isNotFound,
 } = require('../dist/nodes/LmChatLowRouter/catalog.js');
 
 const chat = (id, extra = {}) => ({
@@ -110,4 +111,11 @@ test('description shows price, carbon and context', () => {
 		),
 		undefined,
 	);
+});
+
+test('404 is recognised from NodeApiError and raw HTTP errors', () => {
+	assert.equal(isNotFound({ httpCode: '404' }), true);
+	assert.equal(isNotFound({ response: { status: 404 } }), true);
+	assert.equal(isNotFound({ httpCode: '503' }), false);
+	assert.equal(isNotFound(new Error('timeout')), false);
 });

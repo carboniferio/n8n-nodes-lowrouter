@@ -13,6 +13,7 @@ import { supplyModel } from '@n8n/ai-node-sdk';
 import type { Jurisdiction, LowRouterModel } from './catalog';
 import {
 	BASE_URL,
+	isNotFound,
 	isUnscopedAuto,
 	prefersResponsesApi,
 	scopesFor,
@@ -39,8 +40,12 @@ async function apiGet<T>(
 	})) as T;
 }
 
+// Without a timeout a stalled list request never settles, and the cached catalogue
+// promise would leave every search for that credential waiting on it.
+const LIST_TIMEOUT_MS = 30_000;
+
 async function getList<T>(ctx: ILoadOptionsFunctions, path: string): Promise<T[]> {
-	return (await apiGet<{ data?: T[] }>(ctx, path)).data ?? [];
+	return (await apiGet<{ data?: T[] }>(ctx, path, LIST_TIMEOUT_MS)).data ?? [];
 }
 
 // The catalogue is large (over 1 MB) and every search keystroke or region
@@ -71,12 +76,6 @@ async function getModels(ctx: ILoadOptionsFunctions): Promise<LowRouterModel[]> 
 
 function modelPath(modelId: string): string {
 	return `/models/${modelId.split('/').map(encodeURIComponent).join('/')}`;
-}
-
-function isNotFound(error: unknown): boolean {
-	// NodeApiError carries the HTTP status as a string; a raw Axios error as a number.
-	const { httpCode, response } = error as { httpCode?: unknown; response?: { status?: unknown } };
-	return String(httpCode ?? response?.status) === '404';
 }
 
 // The model lookup only picks the API flavour: a stalled one must not hold up the run.

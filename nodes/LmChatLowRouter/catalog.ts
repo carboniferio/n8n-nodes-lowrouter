@@ -108,6 +108,12 @@ export function toRegionOptions(
 	];
 }
 
+export function isNotFound(error: unknown): boolean {
+	// NodeApiError carries the HTTP status as a string; a raw Axios error as a number.
+	const { httpCode, response } = error as { httpCode?: unknown; response?: { status?: unknown } };
+	return String(httpCode ?? response?.status) === '404';
+}
+
 /**
  * LowRouter serves Chat Completions natively and translates Responses onto it,
  * so Responses is used only for a model that does not list Chat Completions.
