@@ -1,11 +1,17 @@
 {
 	"name": "n8n-nodes-lowrouter",
 	"version": "0.1.0",
-	"description": "",
+	"description": "LowRouter chat model for n8n: carbon-aware LLM routing with EU and sovereignty scopes",
 	"license": "MIT",
-	"homepage": "",
+	"homepage": "https://github.com/carboniferio/n8n-nodes-lowrouter#readme",
 	"keywords": [
-		"n8n-community-node-package"
+		"n8n-community-node-package",
+		"n8n",
+		"lowrouter",
+		"llm",
+		"ai",
+		"chat-model",
+		"openai-compatible"
 	],
 	"author": {
 		"name": "Olivier Bierlaire",
@@ -13,7 +19,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/<...>/n8n-nodes-<...>.git"
+		"url": "git+https://github.com/carboniferio/n8n-nodes-lowrouter.git"
 	},
 	"scripts": {
 		"build": "n8n-node build",
@@ -21,6 +27,7 @@
 		"dev": "n8n-node dev",
 		"lint": "n8n-node lint",
 		"lint:fix": "n8n-node lint --fix",
+		"test": "n8n-node build && node --test test/*.test.js",
 		"release": "n8n-node release",
 		"prepublishOnly": "n8n-node prerelease"
 	},
@@ -32,10 +39,10 @@
 		"aiNodeSdkVersion": 1,
 		"strict": true,
 		"credentials": [
-			"dist/credentials/ExampleApi.credentials.js"
+			"dist/credentials/LowRouterApi.credentials.js"
 		],
 		"nodes": [
-			"dist/nodes/ExampleChatModel/ExampleChatModel.node.js"
+			"dist/nodes/LmChatLowRouter/LmChatLowRouter.node.js"
 		]
 	},
 	"devDependencies": {
@@ -48,5 +55,8 @@
 	"peerDependencies": {
 		"n8n-workflow": "*",
 		"@n8n/ai-node-sdk": "*"
+	},
+	"bugs": {
+		"url": "https://github.com/carboniferio/n8n-nodes-lowrouter/issues"
 	}
 }
