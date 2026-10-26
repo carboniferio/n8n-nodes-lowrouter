@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- No functional change. This is the first release published from GitHub Actions with npm provenance under the `@lowrouter` scope.
+
 ## 0.1.1
 
 - The package is now `@lowrouter/n8n-nodes-lowrouter`, owned by the `lowrouter` npm organization. The unscoped `n8n-nodes-lowrouter` is deprecated and gets no further releases. n8n builds the node type from the package name, so it becomes `@lowrouter/n8n-nodes-lowrouter.lmChatLowRouter`, and workflows built on `n8n-nodes-lowrouter` 0.1.0 need the LowRouter Chat Model node re-added. Both packages register the `lowRouterApi` credential type, so uninstall `n8n-nodes-lowrouter` first. From then until the node is replaced, workflows that use it fail, so deactivate them before you start. Then install `@lowrouter/n8n-nodes-lowrouter`, and in each workflow delete the old node (n8n no longer recognizes it), add the new one, connect it to its AI node and re-enter its model, region and options. Saved credentials carry over.
