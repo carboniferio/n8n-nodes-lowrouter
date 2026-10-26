@@ -26,11 +26,16 @@ type ModelOptions = {
 	reasoningEffort?: string;
 };
 
-async function apiGet<T>(ctx: ILoadOptionsFunctions | ISupplyDataFunctions, path: string) {
+async function apiGet<T>(
+	ctx: ILoadOptionsFunctions | ISupplyDataFunctions,
+	path: string,
+	timeout?: number,
+) {
 	return (await ctx.helpers.httpRequestWithAuthentication.call(ctx, 'lowRouterApi', {
 		method: 'GET',
 		url: `${BASE_URL}${path}`,
 		json: true,
+		timeout,
 	})) as T;
 }
 
@@ -74,29 +79,33 @@ function isNotFound(error: unknown): boolean {
 	return String(httpCode ?? response?.status) === '404';
 }
 
+// The model lookup only picks the API flavour: a stalled one must not hold up the run.
+const LOOKUP_TIMEOUT_MS = 10_000;
+
 async function getEndpoints(
 	ctx: ISupplyDataFunctions,
+	modelId: string,
 	baseModel: string,
-	region: string,
 ): Promise<string[] | undefined> {
-	const modelId = region ? `${baseModel}/${region}` : baseModel;
 	try {
-		return (await apiGet<LowRouterModel>(ctx, modelPath(modelId))).endpoints;
+		return (await apiGet<LowRouterModel>(ctx, modelPath(modelId), LOOKUP_TIMEOUT_MS)).endpoints;
 	} catch (error) {
 		// Other failures surface on the chat request itself; default to Chat Completions.
 		// An unscoped 404 is not conclusive either: /models/{id} does not resolve every ID
 		// the chat endpoint accepts, such as version-less pinned shorthands
 		// (mistral/mistralai/mistral-large), so let the chat request decide.
-		if (!isNotFound(error) || !region) return undefined;
+		if (!isNotFound(error) || modelId === baseModel) return undefined;
 		// A scoped ID is missing either because the model is wrong or because it has no route in the region.
-		const baseExists = await apiGet(ctx, modelPath(baseModel)).then(
-			() => true,
-			(baseError) => !isNotFound(baseError),
+		const base = await apiGet(ctx, modelPath(baseModel), LOOKUP_TIMEOUT_MS).then(
+			() => 'found' as const,
+			(baseError) => (isNotFound(baseError) ? ('missing' as const) : ('unknown' as const)),
 		);
 		throw new NodeOperationError(ctx.getNode(), `LowRouter has no model '${modelId}'`, {
-			description: baseExists
-				? 'The model has no routes in this region: pick another region or set it to Any.'
-				: 'Check the model ID.',
+			description: {
+				found: 'The model has no routes in this region: pick another region or set it to Any.',
+				missing: 'Check the model ID.',
+				unknown: 'Check the model ID, or pick another region or set it to Any.',
+			}[base],
 		});
 	}
 }
@@ -282,7 +291,7 @@ export class LmChatLowRouter implements INodeType {
 
 		const [credentials, endpoints] = await Promise.all([
 			this.getCredentials('lowRouterApi'),
-			getEndpoints(this, baseModel, region),
+			getEndpoints(this, model, baseModel),
 		]);
 		const useResponsesApi = prefersResponsesApi(endpoints);
 		// ChatOpenAI only forwards `reasoning` for model names it recognises as
