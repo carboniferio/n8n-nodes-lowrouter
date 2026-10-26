@@ -38,8 +38,11 @@ const catalog = [
 ];
 
 test('default list keeps active unscoped auto chat models with tool calling', () => {
-	const ids = toListItems(catalog, { showAll: false }).map((item) => item.value);
-	assert.deepEqual(ids, ['auto/mistralai/mistral-large-2512', 'auto/openai/gpt-oss-120b']);
+	const items = toListItems(catalog, { showAll: false });
+	assert.deepEqual(items, [
+		{ name: 'auto/mistralai/mistral-large-2512', value: 'auto/mistralai/mistral-large-2512' },
+		{ name: 'auto/openai/gpt-oss-120b', value: 'auto/openai/gpt-oss-120b' },
+	]);
 });
 
 test('show all lists every ID, sorted', () => {
