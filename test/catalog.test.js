@@ -127,6 +127,12 @@ test('subtitle puts the region first and drops the auto/ prefix', () => {
 		'mistral/mistralai/mistral-large-2512/fr-par',
 	);
 	assert.equal(subtitle(' Auto/mistralai/mistral-small-2603 ', ''), 'mistralai/mistral-small-2603');
+	// A blank region runs as Any, so the subtitle must not show a dangling separator.
+	assert.equal(subtitle('auto/mistralai/mistral-small-2603', ' '), 'mistralai/mistral-small-2603');
+	assert.equal(
+		subtitle('auto/mistralai/mistral-small-2603', ' eu '),
+		'eu · mistralai/mistral-small-2603',
+	);
 });
 
 test('404 is recognised from NodeApiError and raw HTTP errors', () => {

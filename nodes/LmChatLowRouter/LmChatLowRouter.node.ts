@@ -118,9 +118,9 @@ export class LmChatLowRouter implements INodeType {
 		group: ['transform'],
 		version: [1],
 		// $parameter already unwraps the resource locator to its ID. Region first and no auto/
-		// prefix, so the region survives n8n's subtitle truncation.
+		// prefix, so the region survives n8n's subtitle truncation. Both are trimmed like supplyData.
 		subtitle:
-			'={{($parameter.region ? $parameter.region + " · " : "") + String($parameter.model ?? "").trim().replace(/^auto[/]/i, "")}}',
+			'={{[String($parameter.region ?? "").trim(), String($parameter.model ?? "").trim().replace(/^auto[/]/i, "")].filter(Boolean).join(" · ")}}',
 		description: 'Chat models routed by LowRouter, with region and sovereignty controls',
 		defaults: {
 			name: 'LowRouter Chat Model',
