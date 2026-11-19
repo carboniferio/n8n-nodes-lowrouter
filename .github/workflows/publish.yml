@@ -13,7 +13,8 @@
 #
 #   npm list @n8n/node-cli
 #
-# To upgrade, add @n8n/node-cli@latest as a dev dependency using your package manager.
+# package.json pins it to an exact version. To upgrade, bump the pin
+# with npm install -D -E @n8n/node-cli@<version>.
 #
 # ─── ONE-TIME SETUP ────────────────────────────────────────────────────────────
 #
